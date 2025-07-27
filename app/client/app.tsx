@@ -5,7 +5,7 @@ import { Todo } from '../interfaces';
 import { addTask, getTasks } from '../server/actions';
 import TodoItems from './todo-items';
 import { polyfill } from 'mobile-drag-drop';
-import { DarkIcon, LightIcon } from './icons';
+import { DarkIcon, LightIcon, LogoutIcon } from './icons';
 
 interface AppProps {
   token: string;
@@ -18,6 +18,11 @@ export default ({ token, darkMode, setDarkMode } : AppProps) => {
   const [ loading, setLoading ] = useState(true);
   const [ disableSubmit, setDisableSubmit ] = useState(true);
   const effectRan = useRef(false);
+
+  const handleLogout = () => {
+    localStorage.removeItem('session');
+    window.location.reload();
+  };
 
   polyfill();
 
@@ -54,11 +59,19 @@ export default ({ token, darkMode, setDarkMode } : AppProps) => {
         <h1 className="font-bold text-xl text-teal-700 dark:text-teal-300">
           Todo
         </h1>
-        <div
-          className="cursor-pointer"
-          onClick={() => setDarkMode((before) => !before)}
-        >
-          { darkMode ? <LightIcon /> : <DarkIcon /> }
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleLogout}
+            className="cursor-pointer"
+          >
+            <LogoutIcon />
+          </button>
+          <div
+            className="cursor-pointer"
+            onClick={() => setDarkMode((before) => !before)}
+          >
+            { darkMode ? <LightIcon /> : <DarkIcon /> }
+          </div>
         </div>
       </div>
       <div className="flex flex-1 gap-1 flex-col overflow-y-scroll">

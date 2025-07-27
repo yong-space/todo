@@ -1,7 +1,7 @@
 import { CredentialResponse, GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 
 interface LoginGoogleProps {
-  login: (email : string) => void;
+  login: () => void;
   denied: boolean;
 };
 
@@ -12,11 +12,32 @@ export const LoginGoogle = ({
     console.error('Failed to sign in with Google.');
   };
 
-  const handleSuccess = (creds : CredentialResponse) => {
+  const handleSuccess = async (creds : CredentialResponse) => {
     if (!creds.credential) {
       return;
     }
-    login(creds.credential);
+
+    try {
+      const response = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ credential: creds.credential }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.token) {
+          localStorage.setItem('session', data.token);
+          login();
+        }
+      } else {
+        console.error('Failed to verify credential');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+    }
   };
 
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -32,6 +53,8 @@ export const LoginGoogle = ({
           <GoogleLogin
             onSuccess={handleSuccess}
             onError={handleError}
+            useOneTap
+            auto_select
           ></GoogleLogin>
         )}
       </div>

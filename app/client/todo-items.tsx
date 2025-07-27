@@ -4,12 +4,12 @@ import { deleteTask, toggleTask, renameTask, updateOrder } from "../server/actio
 import { TrashIcon } from "./icons";
 
 interface TodoItemProps {
+  token: string;
   tasks: Todo[];
   setTasks: Dispatch<SetStateAction<Todo[]>>;
-  token: string;
 }
 
-export default ({ tasks, setTasks, token }: TodoItemProps) => {
+export default ({ token, tasks, setTasks }: TodoItemProps) => {
   const [ editId, setEditId ] = useState('');
   const [ editName, setEditName ] = useState('');
   const [ dragAndDrop, setDragAndDrop ] = useState({

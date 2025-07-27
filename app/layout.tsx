@@ -14,12 +14,13 @@ export const metadata: Metadata = {
 export const viewport: ViewportLayout = {
   width: 'device-width',
   initialScale: 1,
+  interactiveWidget: 'resizes-content',
   userScalable: false,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="h-dvh flex text-lg">
+    <html lang="en" className="h-full text-lg">
       <body className={`h-dvh flex flex-1 bg-teal-900 dark:bg-gray-600 dark:text-teal-50 ${inter.className}`}>
         {children}
       </body>

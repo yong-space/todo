@@ -4,11 +4,6 @@ import { useEffect, useState } from 'react';
 import App from './client/app';
 import { LoginGoogle } from './client/google-login';
 
-const decodeJWT = (jwt: string) => {
-  const parts = jwt.split('.');
-  return (parts.length !== 3) ? '' : JSON.parse(Buffer.from(parts[1], 'base64').toString());
-};
-
 const Loading = () => (
   <div className="flex flex-1 self-center flex-col items-center">
     <div className="h-12 w-12 animate-spin rounded-full border-4 border-e-transparent text-white">
@@ -19,25 +14,56 @@ const Loading = () => (
 export default () => {
   const [ loading, setLoading ] = useState(true);
   const [ darkMode, setDarkMode ] = useState<boolean | null>(null);
-  const [ token, setToken ] = useState('');
-  const success = (input : string) => {
-    window.localStorage.setItem('token', input);
-    setToken(input);
+  const [ isAuthenticated, setIsAuthenticated ] = useState(false);
+  const [ sessionToken, setSessionToken ] = useState<string | null>(null);
+
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+    window.location.reload();
   };
 
   useEffect(() => {
-    const tokenString = window.localStorage.getItem('token');
-    if (!tokenString) {
-      setLoading(false);
-      return;
+
+    const hash = window.location.hash;
+    if (hash.includes('token=')) {
+      const token = hash.split('token=')[1];
+      localStorage.setItem('session', token);
+      window.location.hash = '';
     }
-    const token = decodeJWT(tokenString);
-    if ((new Date().getTime()) < (token.exp * 1000)) {
-      setToken(tokenString);
-    } else {
-      window.localStorage.removeItem('token');
-    }
-    setLoading(false);
+
+    const checkAuth = async () => {
+      try {
+        const token = localStorage.getItem('session');
+        if (!token) {
+          setIsAuthenticated(false);
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch('/api/auth/verify', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.ok) {
+          setSessionToken(token);
+          setIsAuthenticated(true);
+        } else {
+          localStorage.removeItem('session');
+          setIsAuthenticated(false);
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        localStorage.removeItem('session');
+        setIsAuthenticated(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
   }, []);
 
   useEffect(() => {
@@ -60,9 +86,9 @@ export default () => {
 
   if (loading) {
     return <Loading />;
-  } else if (token) {
-    return <App token={token} darkMode={darkMode} setDarkMode={setDarkMode} />;
+  } else if (isAuthenticated && sessionToken) {
+    return <App darkMode={darkMode} setDarkMode={setDarkMode} token={sessionToken} />;
   } else {
-    return <LoginGoogle login={success} denied={token === null} />;
+    return <LoginGoogle login={handleLogin} denied={false} />;
   }
 };
