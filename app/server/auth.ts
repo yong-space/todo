@@ -1,19 +1,20 @@
 import { OAuth2Client } from 'google-auth-library';
 import { JWTPayload } from 'jose';
 
-const oauth2Client = new OAuth2Client(
-  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  process.env.NODE_ENV === 'production'
-    ? process.env.CALLBACK_URI
-    : 'http://localhost:3000/api/auth/callback'
-);
+const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+const redirectUri = process.env.NODE_ENV === 'production'
+  ? process.env.CALLBACK_URI
+  : 'http://localhost:3000/api/auth/callback';
+
+// Singleton used only for stateless operations (verifyIdToken, generateAuthUrl)
+const oauth2Client = new OAuth2Client(clientId, clientSecret, redirectUri);
 
 export async function verifyGoogleToken(token: string): Promise<JWTPayload | null> {
   try {
     const ticket = await oauth2Client.verifyIdToken({
       idToken: token,
-      audience: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+      audience: clientId,
     });
 
     const payload = ticket.getPayload();
@@ -34,8 +35,10 @@ export async function verifyGoogleToken(token: string): Promise<JWTPayload | nul
 
 export async function exchangeCodeForTokens(code: string) {
   try {
-    const { tokens } = await oauth2Client.getToken(code);
-    oauth2Client.setCredentials(tokens);
+    // Use a per-request client so setCredentials doesn't mutate shared singleton state
+    const requestClient = new OAuth2Client(clientId, clientSecret, redirectUri);
+    const { tokens } = await requestClient.getToken(code);
+    requestClient.setCredentials(tokens);
 
     if (!tokens.id_token) {
       throw new Error('No ID token received');
@@ -46,7 +49,6 @@ export async function exchangeCodeForTokens(code: string) {
       throw new Error('Failed to verify Google token');
     }
 
-    // Store refresh token if available
     if (tokens.refresh_token) {
       sessionData.refreshToken = tokens.refresh_token;
     }
@@ -63,11 +65,10 @@ export async function exchangeCodeForTokens(code: string) {
 
 export async function refreshAccessToken(refreshToken: string) {
   try {
-    oauth2Client.setCredentials({
-      refresh_token: refreshToken,
-    });
-
-    const { credentials } = await oauth2Client.refreshAccessToken();
+    // Use a per-request client to avoid polluting the singleton's credentials
+    const requestClient = new OAuth2Client(clientId, clientSecret, redirectUri);
+    requestClient.setCredentials({ refresh_token: refreshToken });
+    const { credentials } = await requestClient.refreshAccessToken();
     return credentials;
   } catch (error) {
     console.error('Token refresh failed:', error);
