@@ -18,8 +18,17 @@ export default () => {
   const [ sessionToken, setSessionToken ] = useState<string | null>(null);
 
   const handleLogin = () => {
-    setIsAuthenticated(true);
-    window.location.reload();
+    const token = localStorage.getItem('session');
+    if (token) {
+      setSessionToken(token);
+      setIsAuthenticated(true);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('session');
+    setSessionToken(null);
+    setIsAuthenticated(false);
   };
 
   useEffect(() => {
@@ -71,7 +80,7 @@ export default () => {
       let preDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
       const storedDark = window.localStorage.getItem('darkMode');
       if (storedDark) {
-        preDark = eval(storedDark);
+        preDark = storedDark === 'true';
       }
       setDarkMode(preDark);
       return;
@@ -87,7 +96,7 @@ export default () => {
   if (loading) {
     return <Loading />;
   } else if (isAuthenticated && sessionToken) {
-    return <App darkMode={darkMode} setDarkMode={setDarkMode} token={sessionToken} />;
+    return <App darkMode={darkMode} setDarkMode={setDarkMode} token={sessionToken} onLogout={handleLogout} />;
   } else {
     return <LoginGoogle login={handleLogin} denied={false} />;
   }

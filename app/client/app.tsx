@@ -11,18 +11,14 @@ interface AppProps {
   token: string;
   darkMode: boolean | null;
   setDarkMode: Dispatch<SetStateAction<boolean | null>>;
+  onLogout: () => void;
 }
 
-export default ({ token, darkMode, setDarkMode } : AppProps) => {
+export default ({ token, darkMode, setDarkMode, onLogout } : AppProps) => {
   const [ tasks, setTasks ] = useState([] as Todo[]);
   const [ loading, setLoading ] = useState(true);
   const [ disableSubmit, setDisableSubmit ] = useState(true);
   const effectRan = useRef(false);
-
-  const handleLogout = () => {
-    localStorage.removeItem('session');
-    window.location.reload();
-  };
 
   useEffect(() => {
     polyfill();
@@ -50,7 +46,8 @@ export default ({ token, darkMode, setDarkMode } : AppProps) => {
       return;
     }
     const maxOrder = tasks.reduce((max, obj) => Math.max(max, obj.order), -Infinity);
-    setTasks(await addTask(token, maxOrder + 1, newItemName));
+    const newTask = await addTask(token, maxOrder + 1, newItemName);
+    setTasks((prev) => [newTask, ...prev]);
   };
 
   const [ _, handleSubmit, isPending ] = useActionState(saveItem, undefined);
@@ -63,7 +60,7 @@ export default ({ token, darkMode, setDarkMode } : AppProps) => {
         </h1>
         <div className="flex items-center gap-3">
           <button
-            onClick={handleLogout}
+            onClick={onLogout}
             className="cursor-pointer"
           >
             <LogoutIcon />

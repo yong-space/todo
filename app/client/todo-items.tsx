@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 import { Todo } from "../interfaces";
 import { deleteTask, toggleTask, renameTask, updateOrder } from "../server/actions";
 import { TrashIcon } from "./icons";
@@ -19,6 +19,7 @@ export default ({ token, tasks, setTasks }: TodoItemProps) => {
     originalOrder: [] as Todo[],
     updatedOrder: [] as Todo[],
   });
+  const editorRef = useRef<HTMLInputElement>(null);
 
   const toggle = async (item : Todo) => {
     setTasks((tasks) =>
@@ -47,12 +48,8 @@ export default ({ token, tasks, setTasks }: TodoItemProps) => {
 
   const editTask = async (item : Todo) => {
     const id = item._id.toString();
-    const input = document.querySelector("input[name=editor]");
-    if (!(input instanceof HTMLInputElement)) {
-      return;
-    }
-    const newTaskName = input.value.trim();
-    if (newTaskName.length < 3) {
+    const newTaskName = editorRef.current?.value.trim();
+    if (!newTaskName || newTaskName.length < 3) {
       return;
     }
 
@@ -71,10 +68,7 @@ export default ({ token, tasks, setTasks }: TodoItemProps) => {
     if (editId === '') {
       return;
     }
-    const input = document.querySelector("input[name=editor]");
-    if (input instanceof HTMLInputElement) {
-      input.focus();
-    }
+    editorRef.current?.focus();
   }, [ editId ]);
 
   const onDragEnter = (event : React.DragEvent<HTMLElement>) => {
@@ -117,13 +111,7 @@ export default ({ token, tasks, setTasks }: TodoItemProps) => {
   const onDrop = async () => {
     const length = dragAndDrop.updatedOrder.length;
     const orderedList = dragAndDrop.updatedOrder
-      .map((item, index) => ({ ...item, order: length - index }))
-      .toSorted((a, b) => {
-        if (a.done !== b.done) {
-          return a.done ? 1 : -1;
-        }
-        return b.order - a.order;
-      })
+      .toSorted((a, b) => (a.done === b.done ? 0 : a.done ? 1 : -1))
       .map((item, index) => ({ ...item, order: length - index }));
     setTasks(orderedList);
     setDragAndDrop({
@@ -177,6 +165,7 @@ export default ({ token, tasks, setTasks }: TodoItemProps) => {
       ) : (
         <div className="flex flex-1 flex-col">
           <input
+            ref={editorRef}
             name="editor"
             className="appearance-none text-sm text-teal-700 bg-teal-50 border-teal-700 border rounded w-full p-1 mx-2 leading-tight focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-teal-500 focus-visible:border-teal-500 focus-visible:shadow-none"
             onBlur={() => editTask(item)}

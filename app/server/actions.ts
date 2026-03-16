@@ -35,7 +35,7 @@ export const getTasks = async (token: string): Promise<Todo[]> => {
   }
 };
 
-export const addTask = async (token: string, order: number, newTaskName: string) => {
+export const addTask = async (token: string, order: number, newTaskName: string): Promise<Todo> => {
   const email = await authorise(token);
   const newTodo: Todo = {
     _id: new ObjectId(),
@@ -45,23 +45,18 @@ export const addTask = async (token: string, order: number, newTaskName: string)
     owner: email,
     order,
   };
-  console.log('Creating new todo:', newTodo);
   await collection.insertOne(newTodo);
-  return await getTasks(token);
+  return JSON.parse(JSON.stringify(newTodo));
 };
 
 export const toggleTask = async (token: string, id: string, done: boolean) => {
-  console.log(`Marking todo ${id} as ${done}`);
   const email = await authorise(token);
-  const data = await collection.updateOne({ _id: new ObjectId(id), owner: email }, { $set: { done } });
-  return JSON.parse(JSON.stringify(data));
+  await collection.updateOne({ _id: new ObjectId(id), owner: email }, { $set: { done } });
 };
 
 export const renameTask = async (token: string, id: string, name: string) => {
-  console.log(`Renaming ${id} to ${name}`);
   const email = await authorise(token);
-  const data = await collection.updateOne({ _id: new ObjectId(id), owner: email }, { $set: { name } });
-  return JSON.parse(JSON.stringify(data));
+  await collection.updateOne({ _id: new ObjectId(id), owner: email }, { $set: { name } });
 };
 
 export const deleteTask = async (token: string, id: string) => {
