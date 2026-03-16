@@ -24,7 +24,9 @@ export default ({ token, darkMode, setDarkMode } : AppProps) => {
     window.location.reload();
   };
 
-  polyfill();
+  useEffect(() => {
+    polyfill();
+  }, []);
 
   useEffect(() => {
     if (effectRan.current) {
