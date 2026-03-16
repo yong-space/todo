@@ -1,4 +1,4 @@
-FROM oven/bun:1
+FROM node:22-alpine
 WORKDIR /app
 
 COPY .next/standalone /app
@@ -7,4 +7,4 @@ COPY public ./public
 
 ENV NODE_ENV=production
 EXPOSE 3000
-ENTRYPOINT [ "bun", "server.js" ]
+ENTRYPOINT [ "node", "server.js" ]
