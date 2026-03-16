@@ -1,6 +1,6 @@
 "use client"
 
-import { Dispatch, SetStateAction, useEffect, useRef, useState, useActionState } from 'react';
+import { Dispatch, FormEvent, SetStateAction, useEffect, useRef, useState } from 'react';
 import { Todo } from '../interfaces';
 import { addTask, getTasks } from '../server/actions';
 import TodoItems from './todo-items';
@@ -11,20 +11,19 @@ interface AppProps {
   token: string;
   darkMode: boolean | null;
   setDarkMode: Dispatch<SetStateAction<boolean | null>>;
+  onLogout: () => void;
 }
 
-export default ({ token, darkMode, setDarkMode } : AppProps) => {
+export default ({ token, darkMode, setDarkMode, onLogout } : AppProps) => {
   const [ tasks, setTasks ] = useState([] as Todo[]);
   const [ loading, setLoading ] = useState(true);
   const [ disableSubmit, setDisableSubmit ] = useState(true);
+  const [ isPending, setIsPending ] = useState(false);
   const effectRan = useRef(false);
 
-  const handleLogout = () => {
-    localStorage.removeItem('session');
-    window.location.reload();
-  };
-
-  polyfill();
+  useEffect(() => {
+    polyfill();
+  }, []);
 
   useEffect(() => {
     if (effectRan.current) {
@@ -42,16 +41,21 @@ export default ({ token, darkMode, setDarkMode } : AppProps) => {
     };
   }, []);
 
-  const saveItem = async (_: unknown, formData: FormData) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
     const newItemName = formData.get('taskName') as string;
     if (newItemName?.length < 3) {
       return;
     }
+    setIsPending(true);
     const maxOrder = tasks.reduce((max, obj) => Math.max(max, obj.order), -Infinity);
-    setTasks(await addTask(token, maxOrder + 1, newItemName));
+    const newTask = await addTask(token, maxOrder + 1, newItemName);
+    setTasks((prev) => [newTask, ...prev]);
+    event.currentTarget?.reset();
+    setDisableSubmit(true);
+    setIsPending(false);
   };
-
-  const [ _, handleSubmit, isPending ] = useActionState(saveItem, undefined);
 
   return (
     <div className="flex flex-1 flex-col justify-between shadow-lg rounded-md p-2 m-2 gap-3 bg-teal-50 dark:bg-gray-800">
@@ -61,7 +65,7 @@ export default ({ token, darkMode, setDarkMode } : AppProps) => {
         </h1>
         <div className="flex items-center gap-3">
           <button
-            onClick={handleLogout}
+            onClick={onLogout}
             className="cursor-pointer"
           >
             <LogoutIcon />
@@ -86,7 +90,7 @@ export default ({ token, darkMode, setDarkMode } : AppProps) => {
           token={token}
         />
       </div>
-      <form action={handleSubmit} className="flex gap-2">
+      <form onSubmit={handleSubmit} className="flex gap-2">
         <input
           className="appearance-none w-0 bg-teal-50 text-teal-700 border-teal-700 placeholder:italic placeholder:text-teal-500 placeholder:font-light focus:ring-teal-700 focus:border-teal-700 focus:shadow-none flex-1 rounded p-3 disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-200 disabled:cursor-not-allowed"
           name="taskName"
