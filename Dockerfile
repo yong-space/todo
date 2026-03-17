@@ -8,4 +8,4 @@ COPY public ./public
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 EXPOSE 3000
-ENTRYPOINT [ "node", "server.js" ]
+ENTRYPOINT [ "node", "--report-on-signal", "server.js" ]
