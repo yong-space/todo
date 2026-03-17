@@ -5,7 +5,14 @@ if (!process.env.MONGODB_URI) {
 }
 
 const uri = process.env.MONGODB_URI;
-const options = { appName: "devrel.template.nextjs", maxPoolSize: 10 };
+const options = {
+  appName: "devrel.template.nextjs",
+  maxPoolSize: 3,
+  minPoolSize: 1,
+  maxIdleTimeMS: 30_000,
+  serverSelectionTimeoutMS: 5_000,
+  heartbeatFrequencyMS: 30_000,
+};
 
 const globalWithMongo = global as typeof globalThis & {
   _mongoClient?: MongoClient;
