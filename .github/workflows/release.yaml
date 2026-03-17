@@ -10,28 +10,35 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
 
-    - uses: oven-sh/setup-bun@v1
+    - uses: oven-sh/setup-bun@v2
 
     - id: tag
-      uses: mathieudutour/github-tag-action@v6.2
+      uses: ietf-tools/semver-action@v1
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        tag_prefix: ''
+        token: ${{ secrets.GITHUB_TOKEN }}
+        branch: main
+        noVersionBumpBehavior: patch
+        noNewCommitBehavior: current
 
     - run: bun i && bun run build
 
-    - uses: docker/login-action@v3
+    - uses: docker/login-action@v4
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - run: echo "IMAGE_NAME=ghcr.io/${{github.repository}}:${{ steps.tag.outputs.new_tag }}" >> $GITHUB_ENV
+    - run: echo "IMAGE_NAME=ghcr.io/${{github.repository}}:${{ steps.tag.outputs.nextStrict }}" >> $GITHUB_ENV
 
-    - uses: docker/build-push-action@v5
+    - uses: docker/build-push-action@v7
       with:
         context: .
         push: true
