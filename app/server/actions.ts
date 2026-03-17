@@ -65,6 +65,7 @@ export const deleteTask = async (token: string, id: string) => {
 };
 
 export const updateOrder = async (token: string, data: TodoOrder[]) => {
+  if (data.length === 0) return;
   const email = await authorise(token);
 
   const bulkOps: AnyBulkWriteOperation<Todo>[] = data.map((item) => ({
